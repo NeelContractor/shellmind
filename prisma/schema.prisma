@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// A named conversation. Each session tracks its provider/model so you can
+// switch mid-run and history replay still knows what was used.
+model Session {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  provider    String
+  model       String
+  totalTokens Int       @default(0)  // running token count across all turns
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
+
+  @@index([name])
+  @@index([updatedAt])
+}
+
+// One message in a session. Role mirrors LLM convention:
+//   user      — human input
+//   assistant — model response text
+//   tool      — tool execution result fed back to the model
+model Message {
+  id           String     @id @default(cuid())
+  sessionId    String
+  session      Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role         String     // "user" | "assistant" | "tool"
+  content      String
+  toolName     String?    // set when role = "tool"
+  inputTokens  Int?       // tokens consumed by this turn (assistant messages)
+  outputTokens Int?
+  plan         String?    // planner output stored alongside the assistant message
+  createdAt    DateTime   @default(now())
+
+  toolCalls    ToolCall[]
+
+  @@index([sessionId, createdAt])
+}
+
+// Individual tool invocations within a single assistant turn.
+// A message can trigger multiple tool calls (parallel or sequential).
+model ToolCall {
+  id          String   @id @default(cuid())
+  messageId   String
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  toolName    String
+  args        Json     // raw args the model passed
+  result      String   // stringified output
+  isError     Boolean  @default(false)
+  durationMs  Int?     // how long the tool took to execute
+  createdAt   DateTime @default(now())
+
+  @@index([messageId])
+  @@index([toolName])
+}
