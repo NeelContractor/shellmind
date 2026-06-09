@@ -143,3 +143,37 @@ prisma/
   schema.prisma         ← Session, Message, ToolCall models
 docker-compose.yml      ← PostgreSQL container
 ```
+
+---
+
+## Tests
+
+### 1. Basic chat
+```
+hello, what can you do?
+```
+
+### 2. Web search tool
+```
+search for the latest bun.js release notes
+```
+
+### 3. Read a file
+```
+read my package.json and tell me what dependencies I have
+```
+
+### 4. Write a file
+```
+create a file called hello.ts that prints "Hello from ShellMind"
+```
+
+### 5. Shell command
+```
+run ls -la in the current directory
+```
+
+### 6. Dangerous command approval gate
+```
+run rm -rf ./hello.ts
+```
